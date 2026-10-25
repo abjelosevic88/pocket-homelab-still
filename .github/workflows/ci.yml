@@ -23,11 +23,11 @@ jobs:
         run: CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o pocket-still ./cmd/pocket-still
       - name: Smoke test
         run: |
-          DATA_DIR=/tmp/ph DEMO_DATA=true AUTH_MODE=none ./pocket-still &
+          DATA_DIR=/tmp/pst DEMO_DATA=true AUTH_MODE=none ./pocket-still &
           sleep 2
           curl -fsS http://localhost:8080/healthz
-          curl -fsS http://localhost:8080/api/v1/dashboard | grep -q goals_text
-          curl -fsS "http://localhost:8080/api/v1/metrics" | grep -q '"steps"'
+          curl -fsS http://localhost:8080/api/v1/dashboard | grep -q lifetime_min
+          curl -fsS "http://localhost:8080/api/v1/programs/path" | grep -q '"arrive-1"'
           curl -fsS http://localhost:8080/ | grep -q '<div id="root">'
   docker:
     runs-on: ubuntu-latest
