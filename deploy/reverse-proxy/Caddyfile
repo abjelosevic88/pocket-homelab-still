@@ -1,0 +1,5 @@
+# Pocket Still behind Caddy. Homepage widgets and linked apps send their own
+# bearer token to /api/*.
+still.example.com {
+	reverse_proxy pocket-still:8080
+}

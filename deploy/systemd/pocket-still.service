@@ -1,0 +1,23 @@
+[Unit]
+Description=Pocket Still — breathe, sit, notice
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=pocket-still
+Group=pocket-still
+ExecStart=/usr/local/bin/pocket-still
+Environment=DATA_DIR=/var/lib/pocket-still
+Environment=PORT=8080
+Environment=BASE_URL=https://still.example.com
+Environment=SECURE_COOKIES=true
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/pocket-still
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
