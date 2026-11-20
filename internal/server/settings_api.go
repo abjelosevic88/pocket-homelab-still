@@ -529,9 +529,10 @@ func (s *Server) handleExportCSV(w http.ResponseWriter, r *http.Request) {
 	cw.Flush()
 }
 
-// handleImportJSON merges an export into the caller's own data. Practices
-// keep their identity (source "import" + the original id), so importing the
-// same file twice adds nothing; imported practices never go to Pocket Health
+// handleImportJSON merges an export into the caller's own data. It adds,
+// never changes: practices keep their identity (source "import" + the
+// original id), presets, rules and favourites already here are skipped, so
+// importing the same file twice adds nothing; imported practices never go to Pocket Health
 // or tick habits again.
 func (s *Server) handleImportJSON(w http.ResponseWriter, r *http.Request) {
 	var doc exportDoc
@@ -558,6 +559,19 @@ func (s *Server) handleImportJSON(w http.ResponseWriter, r *http.Request) {
 			counts["skipped"]++
 			continue
 		}
+		if have, err := s.store.GetPractice(ctx, uid, old); err == nil && have.StartedAt == p.StartedAt {
+			// the person's own practice: their file back on the same box
+			ids[old] = have.ID
+			counts["already"]++
+			continue
+		}
+		var have int64
+		if s.store.DB.QueryRowContext(ctx, `SELECT id FROM practices WHERE user_id = ? AND source = 'import' AND external_id = ?`, uid, p.ExternalID).Scan(&have) == nil {
+			// brought in before: left as it is now
+			ids[old] = have
+			counts["already"]++
+			continue
+		}
 		if err := s.store.CreatePractice(ctx, uid, &p); err != nil {
 			counts["skipped"]++
 			continue
@@ -568,7 +582,17 @@ func (s *Server) handleImportJSON(w http.ResponseWriter, r *http.Request) {
 		_ = s.store.SetHabitMark(ctx, uid, p.ID, now, "")
 		counts["practices"]++
 	}
+	presets, _ := s.store.ListPresets(ctx, uid, "")
 	for _, pr := range doc.Presets {
+		dup := false
+		for _, h := range presets {
+			if h.Kind == pr.Kind && strings.EqualFold(strings.TrimSpace(h.Name), strings.TrimSpace(pr.Name)) {
+				dup = true
+			}
+		}
+		if dup {
+			continue
+		}
 		in := presetInput{Kind: pr.Kind, Name: pr.Name, Config: pr.Config, Favorite: pr.Favorite, Sort: pr.Sort}
 		cfg, msg := in.check()
 		if msg != "" {
@@ -595,12 +619,26 @@ func (s *Server) handleImportJSON(w http.ResponseWriter, r *http.Request) {
 			counts["lessons"]++
 		}
 	}
+	favs, _ := s.store.Favorites(ctx, uid)
 	for _, k := range doc.Favorites {
+		if favs[k] {
+			continue
+		}
 		if content.TechniqueName(k) != "" && s.store.SetFavorite(ctx, uid, k, true) == nil {
 			counts["favorites"]++
 		}
 	}
+	rules, _ := s.store.ListRules(ctx, uid)
 	for _, ru := range doc.Rules {
+		dup := false
+		for _, h := range rules {
+			if h.Kind == ru.Kind && h.MinMinutes == ru.MinMinutes && h.HabitID == ru.HabitID {
+				dup = true
+			}
+		}
+		if dup {
+			continue
+		}
 		ru.ID = 0
 		if err := s.store.CreateRule(ctx, uid, &ru); err == nil {
 			counts["rules"]++

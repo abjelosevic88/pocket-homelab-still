@@ -64,4 +64,6 @@ Offers `mindfulness:read` (dashboard, day, overlay, stats, practices without not
 
 ## Data
 
-`GET /export.json`, `GET /export.csv`, `POST /import` (a Pocket Still export; importing twice adds nothing), `GET /backup` (admin, the whole database).
+`GET /export.json`, `GET /export.csv`, `POST /import` (a Pocket Still export; adds only what is not here yet, so importing twice adds nothing), `GET /backup` (admin, the whole database).
+
+Pocket Move can copy your practice out and bring it in: `GET /pocket/portable` describes `/export.json`, `/export.csv` and `/import` for `move:export` / `move:import` links.

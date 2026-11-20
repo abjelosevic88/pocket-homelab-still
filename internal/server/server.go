@@ -235,6 +235,7 @@ func (s *Server) registerWithCore(ctx context.Context) error {
 		URL: s.cfg.CoreAppURL, PublicURL: s.cfg.BaseURL, HealthPath: "/healthz", EnvPrefix: "STILL",
 		Publishes: eventTopics,
 		Offers:    linkOffers,
+		Portable:  portable,
 		Uses:      append(linkUses(), core.InferenceUse()),
 		Services:  []core.ServiceUse{{Type: "navidrome", Reason: "Play your own music or ambient playlists behind a sit"}},
 	}
