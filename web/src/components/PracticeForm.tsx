@@ -4,8 +4,8 @@ import { api, V1 } from '../lib/api'
 import type { Practice, PracticeResult } from '../lib/types'
 import { CALM_LABEL, KIND_NAME } from '../lib/still'
 import { useLibrary } from './Layout'
-import { Select } from './Select'
-import { Field, Modal, Segmented, useToast } from './ui'
+import { Select } from '../pocket-ui/Select'
+import { Field, Modal, Segmented, useToast } from '../pocket-ui/ui'
 
 function localInput(iso?: string): string {
   const d = iso ? new Date(iso) : new Date()

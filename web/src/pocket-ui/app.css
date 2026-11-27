@@ -1,3 +1,4 @@
+/* Pocket UI kit — synced from pocket-homelab-core/sdk/ui by scripts/sync-sdk.py. Change it there, not here. */
 /* ==========================================================================
    App shell: sidebar, top bar, palette, shortcuts
    ========================================================================== */
@@ -146,3 +147,4 @@
   .page-header h1 { font-size: 19px; }
   .page-header .actions { width: 100%; }
 }
+.menu-sub-caret { color: var(--muted); margin-right: -4px; }

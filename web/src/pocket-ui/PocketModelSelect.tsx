@@ -1,3 +1,4 @@
+// Pocket UI kit — synced from pocket-homelab-core/sdk/ui by scripts/sync-sdk.py. Change it there, not here.
 import { useEffect, useState } from 'react'
 import { api, V1 } from '../lib/api'
 import { Select } from './Select'

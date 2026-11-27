@@ -6,7 +6,7 @@ import { lessonSession, sessionURL } from '../lib/session'
 import type { Achievement, LessonView, ProgramView } from '../lib/types'
 import { fmtDate } from '../lib/format'
 import { KIND_ICON, fmtMin, techniqueName } from '../lib/still'
-import { Card, Confirm, Loading, PageHeader, useAsync, useToast } from '../components/ui'
+import { Card, Confirm, Loading, PageHeader, useAsync, useToast } from '../pocket-ui/ui'
 import { Icon } from '../components/icons'
 import { announceChange, useCrumb, useLibrary, useOnChange } from '../components/Layout'
 

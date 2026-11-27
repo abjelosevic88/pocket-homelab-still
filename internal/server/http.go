@@ -14,6 +14,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 
 	core "github.com/abjelosevic88/pocket-homelab-core/sdk"
+	"github.com/abjelosevic88/pocket-homelab-core/sdk/appkit"
 	"github.com/abjelosevic88/pocket-homelab-still/internal/store"
 )
 
@@ -41,8 +42,9 @@ func (s *Server) Router() http.Handler {
 		r.Post("/auth/login", s.handleLogin)
 		r.Post("/auth/setup", s.handleSetup)
 		r.Get("/auth/status", s.handleAuthStatus)
-		r.Get("/auth/oidc/start", s.handleOIDCStart)
-		r.Get("/auth/oidc/callback", s.handleOIDCCallback)
+		r.Get("/auth/oidc/start", s.rp.Start)
+		r.Get("/auth/oidc/callback", s.rp.Callback)
+		r.Post("/client-error", appkit.ClientErrors(s.log, s.whoFor))
 
 		r.Group(func(r chi.Router) {
 			r.Use(s.requireAuth)
@@ -304,4 +306,13 @@ func (s *Server) handleSPA(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 	r.URL.Path = "/"
 	http.FileServerFS(s.webFS).ServeHTTP(w, r)
+}
+
+func firstNonEmpty(v ...string) string {
+	for _, s := range v {
+		if s != "" {
+			return s
+		}
+	}
+	return ""
 }

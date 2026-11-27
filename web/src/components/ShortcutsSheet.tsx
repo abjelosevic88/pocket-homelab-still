@@ -1,4 +1,4 @@
-import { Modal } from './ui'
+import { Modal } from '../pocket-ui/ui'
 
 const GROUPS: { title: string; keys: [string[], string][] }[] = [
   { title: 'Go to', keys: [[['h'], 'Today'], [['b'], 'Breathe'], [['m'], 'Meditate'], [['p'], 'The Path'], [['j'], 'Journal'], [['s'], 'Statistics'], [['g'], 'Milestones'], [[','], 'Settings'], [['/'], 'Search & commands'], [['⌘', 'K'], 'Search & commands']] },

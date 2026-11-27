@@ -3,7 +3,7 @@ import { api, V1 } from '../lib/api'
 import type { Achievements } from '../lib/types'
 import { fmtDate } from '../lib/format'
 import { GROUP_NAME, fmtMin } from '../lib/still'
-import { Card, Loading, PageHeader, useAsync } from '../components/ui'
+import { Card, Loading, PageHeader, useAsync } from '../pocket-ui/ui'
 import { Icon } from '../components/icons'
 import { useOnChange } from '../components/Layout'
 

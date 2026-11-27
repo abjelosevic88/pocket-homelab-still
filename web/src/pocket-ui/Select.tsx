@@ -1,5 +1,6 @@
+// Pocket UI kit — synced from pocket-homelab-core/sdk/ui by scripts/sync-sdk.py. Change it there, not here.
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { Icon } from './icons'
+import { Icon } from '../components/icons'
 
 export interface SelectOption { value: string; label: string; hint?: string; group?: string; /** shown, not pickable */ disabled?: boolean }
 

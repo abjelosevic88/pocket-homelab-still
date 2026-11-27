@@ -10,8 +10,8 @@ import { Sidebar } from './Sidebar'
 import { CommandPalette, type PaletteCommand } from './CommandPalette'
 import { ShortcutsSheet } from './ShortcutsSheet'
 import { PracticeModal } from './PracticeForm'
-import { Avatar, type Anchor, type MenuItem, Menu, MenuButton, modalOpen, rectOf, useIsMobile, useMediaQuery } from './ui'
-import { AskButton } from './AskButton'
+import { Avatar, type Anchor, type MenuItem, Menu, MenuButton, modalOpen, rectOf, useIsMobile, useMediaQuery } from '../pocket-ui/ui'
+import { AskButton } from '../pocket-ui/AskButton'
 
 const SIDEBAR_KEY = 'pst-sidebar'
 

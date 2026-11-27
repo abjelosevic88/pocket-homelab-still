@@ -9,6 +9,7 @@ import (
 	"time"
 
 	core "github.com/abjelosevic88/pocket-homelab-core/sdk"
+	"github.com/abjelosevic88/pocket-homelab-core/sdk/appkit"
 	"github.com/abjelosevic88/pocket-homelab-still/internal/notify"
 	"github.com/abjelosevic88/pocket-homelab-still/internal/pocket"
 	"github.com/abjelosevic88/pocket-homelab-still/internal/store"
@@ -62,23 +63,14 @@ func linkUses() []core.Use {
 
 // Connection modes, chosen per person and per app in Settings.
 const (
-	modeCore   = "core"
-	modeDirect = "direct"
-	modeOff    = "off"
+	modeCore   = appkit.ModeCore
+	modeDirect = appkit.ModeDirect
+	modeOff    = appkit.ModeOff
 )
 
 // connMode is the mode in effect: the chosen one, else direct when a token
 // was entered, else Pocket Core when Still is connected to one, else direct.
-func (s *Server) connMode(mode, token string) string {
-	switch mode {
-	case modeCore, modeDirect, modeOff:
-		return mode
-	}
-	if token != "" || !s.core.Configured() {
-		return modeDirect
-	}
-	return modeCore
-}
+func (s *Server) connMode(mode, token string) string { return appkit.ConnMode(s.core, mode, token) }
 
 // notConnected means the person has no working connection to the app.
 type notConnected struct{ msg string }
@@ -97,25 +89,7 @@ type siblingConn struct {
 	public string
 }
 
-func linkReason(app, reason string) string {
-	switch reason {
-	case "off_person":
-		return "you switched the Still → " + app + " link off in Pocket Core (Settings → Apps acting for me)"
-	case "off_admin":
-		return "the Still → " + app + " link is switched off in Pocket Core (Links)"
-	case "target_missing":
-		return app + " is not registered with Pocket Core"
-	case "not_offered":
-		return "this " + app + " version does not accept app links yet"
-	case "not_declared":
-		return "Pocket Core has not seen this Still version yet; it re-registers within a minute of starting"
-	case "not_in_audience":
-		return "you do not have access to " + app + " in Pocket Core"
-	case "unknown_user":
-		return "your email is not a person in Pocket Core"
-	}
-	return ""
-}
+func linkReason(app, reason string) string { return appkit.LinkReason("Still", app, reason) }
 
 // connSettings returns a person's saved mode, URL, token and public URL for an app.
 func connSettings(st store.Settings, a pocketApp) (mode, url, token, public string) {

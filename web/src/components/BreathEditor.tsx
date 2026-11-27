@@ -5,7 +5,7 @@ import { breathsPerMinute, cycleSeconds, PHASE_LABEL, fmtClock, totalSeconds, cy
 import type { BreathConfig, Phase, PhaseType, Preset } from '../lib/types'
 import { Icon } from './icons'
 import { PhaseDiagram } from './BreathVisual'
-import { Confirm, Field, Modal, Segmented, Switch, errMsg, useToast } from './ui'
+import { Confirm, Field, Modal, Segmented, Switch, errMsg, useToast } from '../pocket-ui/ui'
 
 const TYPES: { value: PhaseType; label: string }[] = [
   { value: 'in', label: 'Breathe in' }, { value: 'in2', label: 'Top up (second sip)' }, { value: 'hold', label: 'Hold (full)' },

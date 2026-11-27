@@ -1,4 +1,4 @@
-import { AskButton } from '../components/AskButton'
+import { AskButton } from '../pocket-ui/AskButton'
 import React, { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api, V1 } from '../lib/api'
@@ -7,11 +7,11 @@ import type { APIToken, ConnMode, Habit, HabitRule, Settings as SettingsT, User 
 import { DATE_FORMATS, TIME_FORMATS, fmtBytes, fmtDateTime, type DateFormat, type TimeFormat } from '../lib/format'
 import { KIND_NAME } from '../lib/still'
 import { AMBIENT_NAMES, BELL_NAMES, bell, setVolume, speak, unlock } from '../lib/audio'
-import { Avatar, Confirm, CoreHint, Field, Loading, Modal, Segmented, SettingRow, Switch, Tabs, useAsync, useIsMobile, useToast } from '../components/ui'
+import { Avatar, Confirm, CoreHint, Field, Loading, Modal, Segmented, SettingRow, Switch, Tabs, useAsync, useIsMobile, useToast } from '../pocket-ui/ui'
 import { Icon } from '../components/icons'
-import { Select } from '../components/Select'
+import { Select } from '../pocket-ui/Select'
 import { ShortcutsSheet } from '../components/ShortcutsSheet'
-import { PocketModelSelect } from '../components/PocketModelSelect'
+import { PocketModelSelect } from '../pocket-ui/PocketModelSelect'
 
 type TabId = 'practice' | 'reminders' | 'apps' | 'ai' | 'profile' | 'people' | 'tokens' | 'data' | 'about'
 

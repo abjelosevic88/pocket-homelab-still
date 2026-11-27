@@ -2,13 +2,9 @@ package server
 
 import (
 	"context"
-	"errors"
-	"net/http"
-	"regexp"
-	"strings"
 
 	core "github.com/abjelosevic88/pocket-homelab-core/sdk"
-	"github.com/abjelosevic88/pocket-homelab-still/internal/store"
+	"github.com/abjelosevic88/pocket-homelab-core/sdk/appkit"
 )
 
 // Pocket Core app links (docs/links.md in pocket-homelab-core), Still as the
@@ -43,60 +39,21 @@ var capabilities = core.Capabilities{
 	Widget: &core.Widget{Title: "Still", What: "Today's minutes against your daily goal, your streak, and what to practise next"},
 }
 
-type linkRoute struct {
-	methods string
-	path    *regexp.Regexp
-	scope   string // "" = any linked app
+// linkRoutes are the requests a linked app may make with its scopes; every
+// other route stays closed to it (appkit.Routes, with the Portable and
+// Capabilities routes added in newAuth).
+var linkRoutes = appkit.Routes{
+	appkit.R("GET", `^/api/v1/auth/me$`, ""),
+	appkit.R("GET", `^/api/v1/(dashboard|overlay|stats|practices|programs|achievements)$`, "mindfulness:read"),
+	appkit.R("GET", `^/api/v1/day/\d{4}-\d{2}-\d{2}$`, "mindfulness:read"),
+	appkit.R("GET", `^/api/v1/summary/\d{4}-\d{2}-\d{2}$`, "mindfulness:read"),
+	appkit.R("POST", `^/api/v1/practices$`, "mindfulness:write"),
+	appkit.R("PUT DELETE", `^/api/v1/practices/\d+$`, "mindfulness:write"),
 }
 
-var linkRoutes = []linkRoute{
-	{"GET", regexp.MustCompile(`^/api/v1/auth/me$`), ""},
-	{"GET", regexp.MustCompile(`^/api/v1/(dashboard|overlay|stats|practices|programs|achievements)$`), "mindfulness:read"},
-	{"GET", regexp.MustCompile(`^/api/v1/day/\d{4}-\d{2}-\d{2}$`), "mindfulness:read"},
-	{"GET", regexp.MustCompile(`^/api/v1/summary/\d{4}-\d{2}-\d{2}$`), "mindfulness:read"},
-	{"POST", regexp.MustCompile(`^/api/v1/practices$`), "mindfulness:write"},
-	{"PUT DELETE", regexp.MustCompile(`^/api/v1/practices/\d+$`), "mindfulness:write"},
-}
-
-var errLinkScope = errors.New("outside the link's scope")
-
-// linkAllows reports whether a link token with these scopes may make this request.
-func linkAllows(scopes []string, r *http.Request) bool {
-	if portable.LinkAllows(scopes, r) || capabilities.LinkAllows(scopes, r) {
-		return true
-	}
-	for _, lr := range linkRoutes {
-		if !strings.Contains(" "+lr.methods+" ", " "+r.Method+" ") || !lr.path.MatchString(r.URL.Path) {
-			continue
-		}
-		if lr.scope == "" {
-			return true
-		}
-		for _, sc := range scopes {
-			if sc == lr.scope {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-// linkUser validates a pcx_ token, checks the route against its scopes and
-// maps it to the person it acts for. The second value is the acting app's slug.
-func (s *Server) linkUser(ctx context.Context, tok string, r *http.Request) (*store.User, string, error) {
-	in, err := s.core.Introspect(ctx, tok)
-	if err != nil {
-		return nil, "", err
-	}
-	if !in.Active || !in.Delegated() || in.User == nil || in.User.Email == "" || in.App == nil || in.App.Slug == "" {
-		return nil, "", http.ErrNoCookie
-	}
-	if !linkAllows(strings.Fields(in.Scope), r) {
-		return nil, "", errLinkScope
-	}
-	u, err := s.coreIdentityUser(ctx, in)
-	return u, in.App.Slug, err
-}
+// linkAllows reports whether a link token with these scopes may make a
+// request: linkRoutes plus the Portable and Capabilities routes.
+var linkAllows = linkRoutes.Allow(portable, capabilities)
 
 const linkAppKey ctxKey = 2
 

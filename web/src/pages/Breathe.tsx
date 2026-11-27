@@ -10,7 +10,7 @@ import { announceChange, useCrumb, useLibrary } from '../components/Layout'
 import { BreathEditor } from '../components/BreathEditor'
 import { PhaseDiagram } from '../components/BreathVisual'
 import { Icon } from '../components/icons'
-import { Card, Empty, Loading, PageHeader, Segmented, errMsg, useToast } from '../components/ui'
+import { Card, Empty, Loading, PageHeader, Segmented, errMsg, useToast } from '../pocket-ui/ui'
 
 const GOOD: { value: string; label: string; icon: string }[] = [
   { value: 'all', label: 'All', icon: 'sparkles' }, { value: 'calm', label: 'Calm', icon: 'waves' }, { value: 'focus', label: 'Focus', icon: 'target' },

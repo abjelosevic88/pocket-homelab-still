@@ -212,8 +212,8 @@ func TestOIDCSettingsSource(t *testing.T) {
 	dir := t.TempDir()
 	cfg := testConfig(dir)
 	s := New(cfg, openTestStore(t, cfg), log, nil)
-	if s.oidcEnabled() || s.oidcName() != "" {
-		t.Fatalf("enabled without any settings: %q", s.oidcName())
+	if s.rp.Enabled() || s.rp.Name() != "" {
+		t.Fatalf("enabled without any settings: %q", s.rp.Name())
 	}
 	srv := httptest.NewServer(s.Router())
 	t.Cleanup(srv.Close)
@@ -243,21 +243,14 @@ func TestOIDCSettingsSource(t *testing.T) {
 		t.Fatal(err)
 	}
 	s = New(cfg, openTestStore(t, cfg), log, nil)
-	issuer, id, secret, name := s.oidcSettings()
-	if issuer != "http://core.invalid" || id != "pco_wishlist" || secret != "s3" || name != "Pocket Core" || !s.oidcEnabled() || !s.oidcAutoCreate() {
-		t.Errorf("core-issued client: %q %q %q %q enabled=%v auto=%v", issuer, id, secret, name, s.oidcEnabled(), s.oidcAutoCreate())
-	}
-	p := s.provider(issuer)
-	if p.issuerURL != issuer || s.provider(issuer) != p {
-		t.Errorf("provider not cached for %q", issuer)
+	got := s.rp.Settings()
+	if got.Issuer != "http://core.invalid" || got.ClientID != "pco_wishlist" || got.Secret != "s3" || got.Name != "Pocket Core" || !s.rp.Enabled() || !got.AutoCreate {
+		t.Errorf("core-issued client: %+v enabled=%v", got, s.rp.Enabled())
 	}
 
-	// explicit OIDC_* wins, and the provider follows the issuer
+	// explicit OIDC_* wins
 	cfg.OIDCIssuer, cfg.OIDCClientID, cfg.OIDCClientSecret, cfg.OIDCName = "http://idp.invalid", "me", "", "PocketID"
-	if issuer, id, _, name = s.oidcSettings(); issuer != "http://idp.invalid" || id != "me" || name != "PocketID" || s.oidcAutoCreate() {
-		t.Errorf("env settings: %q %q %q auto=%v", issuer, id, name, s.oidcAutoCreate())
-	}
-	if np := s.provider(issuer); np == p || np.issuerURL != issuer {
-		t.Errorf("provider not rebuilt for the new issuer")
+	if got = s.rp.Settings(); got.Issuer != "http://idp.invalid" || got.ClientID != "me" || got.Name != "PocketID" || got.AutoCreate {
+		t.Errorf("env settings: %+v", got)
 	}
 }

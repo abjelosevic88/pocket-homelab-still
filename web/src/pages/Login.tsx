@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { api, V1 } from '../lib/api'
 import { useApp } from '../lib/app-context'
-import { Field } from '../components/ui'
+import { Field } from '../pocket-ui/ui'
 import { Icon } from '../components/icons'
 
 export default function Login({ mode }: { mode: 'login' | 'setup' }) {

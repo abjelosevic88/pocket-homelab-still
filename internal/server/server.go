@@ -15,6 +15,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	core "github.com/abjelosevic88/pocket-homelab-core/sdk"
+	"github.com/abjelosevic88/pocket-homelab-core/sdk/appkit"
 	"github.com/abjelosevic88/pocket-homelab-still/internal/config"
 	"github.com/abjelosevic88/pocket-homelab-still/internal/store"
 )
@@ -36,15 +37,17 @@ type Server struct {
 	ruleMu   sync.Mutex // habit ticks are serialized
 	healthMu sync.Mutex // writes to Pocket Health are serialized
 
-	oidcMu sync.Mutex
-	oidc   *oidcProvider // for the issuer in use; rebuilt when it changes
+	// the shared chassis (appkit in the Core SDK): sign-in, request auth,
+	// connection-mode reports
+	rp    *appkit.RP
+	auth  *appkit.Auth[*store.User]
+	modes *appkit.ModeReporter
 
 	core     *core.Client
 	coreMu   sync.Mutex
 	coreOK   bool
 	coreErr  string
 	resolved map[string]resolvedURL
-	modesMu  sync.Mutex // one connection-mode report at a time
 }
 
 type resolvedURL struct {
@@ -54,9 +57,12 @@ type resolvedURL struct {
 
 // New creates a server.
 func New(cfg *config.Config, st *store.Store, log *slog.Logger, webFS fs.FS) *Server {
-	return &Server{cfg: cfg, store: st, log: log, webFS: webFS, started: time.Now(), oidc: &oidcProvider{},
+	s := &Server{cfg: cfg, store: st, log: log, webFS: webFS, started: time.Now(),
 		core:     core.New(cfg.CoreURL, core.Options{DB: st.DB, TokenFile: cfg.DataDir + "/core.token", UserAgent: cfg.UserAgent}),
 		resolved: map[string]resolvedURL{}}
+	s.rp, s.auth = s.newRP(), s.newAuth()
+	s.modes = &appkit.ModeReporter{Core: s.core, Modes: s.connModes, Log: s.log}
+	return s
 }
 
 // Bootstrap seeds the first admin (if configured), the owner's integration
@@ -211,7 +217,7 @@ func (s *Server) coreLoop(ctx context.Context) {
 			s.log.Warn("pocket core: registration failed, retrying", "err", err, "in", wait.String())
 		} else {
 			wait = 30 * time.Minute
-			s.reportModes(ctx)
+			s.modes.Report(ctx)
 		}
 		select {
 		case <-ctx.Done():

@@ -6,7 +6,7 @@ import { sessionURL } from '../lib/session'
 import type { Dashboard } from '../lib/types'
 import { Icon } from './icons'
 import { createItems, type CreateKind } from './Layout'
-import { type Anchor, Menu, rectOf } from './ui'
+import { type Anchor, Menu, rectOf } from '../pocket-ui/ui'
 
 export function Sidebar({ onCreate, onNavigate, counts }: { onCreate: (k: CreateKind) => void; onNavigate: () => void; counts: Dashboard | null }) {
   const { status, settings } = useApp()

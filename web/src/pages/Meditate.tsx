@@ -9,8 +9,8 @@ import { AMBIENT_NAMES, BELL_NAMES, bell, unlock } from '../lib/audio'
 import type { Bell, MusicPlaylist, Preset, Style, TimerConfig } from '../lib/types'
 import { announceChange, useLibrary } from '../components/Layout'
 import { Icon } from '../components/icons'
-import { Select, type SelectOption } from '../components/Select'
-import { Card, Confirm, Empty, Field, Loading, Modal, PageHeader, Segmented, errMsg, useToast } from '../components/ui'
+import { Select, type SelectOption } from '../pocket-ui/Select'
+import { Card, Confirm, Empty, Field, Loading, Modal, PageHeader, Segmented, errMsg, useToast } from '../pocket-ui/ui'
 
 const LENGTHS = [3, 5, 10, 15, 20, 30, 45, 0]
 

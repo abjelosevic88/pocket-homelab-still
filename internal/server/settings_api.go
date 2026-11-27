@@ -292,7 +292,7 @@ func (s *Server) handlePutSettings(w http.ResponseWriter, r *http.Request) {
 	}
 	for _, k := range modeKeys {
 		if keys[k] {
-			s.reportModesSoon()
+			s.modes.Soon()
 			break
 		}
 	}

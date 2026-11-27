@@ -10,8 +10,8 @@ import { type BreathMoment, PHASE_LABEL, PHASE_SPOKEN, cycleCount, fmtClock, mom
 import type { BreathConfig, Cue, Library, MusicPlaylist, PracticeResult, ProgramView, Style, TimerConfig } from '../lib/types'
 import { BreathVisual } from '../components/BreathVisual'
 import { Icon } from '../components/icons'
-import { Select } from '../components/Select'
-import { Loading, errMsg } from '../components/ui'
+import { Select } from '../pocket-ui/Select'
+import { Loading, errMsg } from '../pocket-ui/ui'
 
 const CALM = [
   { v: 1, label: 'Tense' }, { v: 2, label: 'Uneasy' }, { v: 3, label: 'Okay' }, { v: 4, label: 'Settled' }, { v: 5, label: 'Calm' },

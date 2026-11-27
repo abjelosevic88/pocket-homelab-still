@@ -2,12 +2,11 @@ package server
 
 import (
 	"context"
-	"time"
 
 	core "github.com/abjelosevic88/pocket-homelab-core/sdk"
 )
 
-// ---- connection modes on Pocket Core's map ----
+// ---- connection modes on Pocket Core's map (appkit.ModeReporter sends them) ----
 //
 // Core can switch its own links but cannot see a URL and token pasted into
 // Still, so Still tells it how each person actually connects to
@@ -39,39 +38,6 @@ func (s *Server) connModes(ctx context.Context) ([]core.ConnMode, error) {
 		out = append(out, core.ConnMode{User: u.Email, Target: "service:navidrome", Mode: s.connMode(st.MusicMode, st.MusicPassword)})
 	}
 	return out, nil
-}
-
-// reportModes sends the modes to Core when Still is connected to one
-// (registered, so it has an app token). Serialized, and computed at send
-// time, so the last report always carries the latest modes.
-func (s *Server) reportModes(ctx context.Context) {
-	if !s.core.Configured() || s.core.Token() == "" {
-		return
-	}
-	s.modesMu.Lock()
-	defer s.modesMu.Unlock()
-	modes, err := s.connModes(ctx)
-	if err != nil {
-		s.log.Warn("pocket core: reading connection modes failed", "err", err)
-		return
-	}
-	if err := s.core.ReportModes(ctx, modes); err != nil {
-		s.log.Warn("pocket core: reporting connection modes failed", "err", err)
-		return
-	}
-	s.log.Debug("pocket core: connection modes reported", "count", len(modes))
-}
-
-// reportModesSoon reports in the background, so saving settings never waits on Core.
-func (s *Server) reportModesSoon() {
-	if !s.core.Configured() {
-		return
-	}
-	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-		defer cancel()
-		s.reportModes(ctx)
-	}()
 }
 
 // modeKeys are the settings that can change a person's effective mode: the
