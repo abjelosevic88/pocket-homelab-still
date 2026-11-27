@@ -33,6 +33,16 @@ var portable = &core.Portable{
 	},
 }
 
+// capabilities is what Pocket Search, Pocket Day and Pocket Hub may ask Still
+// (docs/capabilities.md in pocket-homelab-core); Register adds the pocket:*
+// offers, capabilities.go answers them. No quick capture: Still has no
+// one-line way to log a practice, only the form.
+var capabilities = core.Capabilities{
+	Search: &core.Searchable{What: "Your own patterns and timers, the built-in practices, courses and lessons by name, and your sessions by the note you wrote", Kinds: []string{"practice", "course", "lesson", "session"}, Bangs: []string{"still", "meditate"}},
+	Day:    &core.DayFeed{Label: "Still", One: "session", Many: "sessions", Unit: "min", What: "Your breathing and meditation sessions that day, the lessons you finished and the milestones you reached"},
+	Widget: &core.Widget{Title: "Still", What: "Today's minutes against your daily goal, your streak, and what to practise next"},
+}
+
 type linkRoute struct {
 	methods string
 	path    *regexp.Regexp
@@ -52,7 +62,7 @@ var errLinkScope = errors.New("outside the link's scope")
 
 // linkAllows reports whether a link token with these scopes may make this request.
 func linkAllows(scopes []string, r *http.Request) bool {
-	if portable.LinkAllows(scopes, r) {
+	if portable.LinkAllows(scopes, r) || capabilities.LinkAllows(scopes, r) {
 		return true
 	}
 	for _, lr := range linkRoutes {

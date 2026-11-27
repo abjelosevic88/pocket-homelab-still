@@ -373,3 +373,38 @@ func (s *Store) Tags(ctx context.Context, uid int64) (map[string]int, error) {
 	}
 	return out, rows.Err()
 }
+
+// SearchNotes finds a person's practices whose note has every word (lower
+// case), newest first.
+func (s *Store) SearchNotes(ctx context.Context, uid int64, words []string, limit int) ([]Practice, error) {
+	where := []string{"user_id = ?", "note <> ''"}
+	args := []any{uid}
+	esc := strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
+	for _, w := range words {
+		where = append(where, `lower(note) LIKE ? ESCAPE '\'`)
+		args = append(args, "%"+esc.Replace(w)+"%")
+	}
+	rows, err := s.DB.QueryContext(ctx, `SELECT `+practiceCols+` FROM practices WHERE `+strings.Join(where, " AND ")+` ORDER BY started_at DESC, id DESC LIMIT ?`, append(args, limit)...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []Practice{}
+	for rows.Next() {
+		p, err := scanPractice(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *p)
+	}
+	return out, rows.Err()
+}
+
+// TopTechnique is the pattern, style or preset a person practised most often
+// since a day ("" when nothing).
+func (s *Store) TopTechnique(ctx context.Context, uid int64, since string) string {
+	var t sql.NullString
+	_ = s.DB.QueryRowContext(ctx, `SELECT technique FROM practices WHERE user_id = ? AND date >= ? AND technique <> ''
+		GROUP BY technique ORDER BY COUNT(1) DESC, MAX(started_at) DESC LIMIT 1`, uid, since).Scan(&t)
+	return t.String
+}

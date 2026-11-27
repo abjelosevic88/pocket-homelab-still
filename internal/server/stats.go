@@ -838,47 +838,71 @@ func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, out)
 }
 
-// handleDay is one day for Pocket Day's journal (and anyone with mindfulness:read).
-func (s *Server) handleDay(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	uid := actorID(ctx)
-	date := r.URL.Path[strings.LastIndex(r.URL.Path, "/")+1:]
-	if !validDate(date) || date == "" {
-		writeErr(w, http.StatusBadRequest, "a date (YYYY-MM-DD) is required")
-		return
-	}
+// dayPractice is one practice in a day.
+type dayPractice struct {
+	ID         int64   `json:"id"`
+	Kind       string  `json:"kind"`
+	KindName   string  `json:"kind_name"`
+	Technique  string  `json:"technique"`
+	Title      string  `json:"title"`
+	StartedAt  string  `json:"started_at"`
+	EndedAt    string  `json:"ended_at"`
+	Minutes    float64 `json:"minutes"`
+	CalmBefore *int    `json:"calm_before"`
+	CalmAfter  *int    `json:"calm_after"`
+	Lesson     string  `json:"lesson,omitempty"`
+	Note       string  `json:"note,omitempty"`
+}
+
+// dayLesson is a lesson finished in a day.
+type dayLesson struct {
+	Program string `json:"program"`
+	Stage   string `json:"stage"`
+	Title   string `json:"title"`
+
+	programKey, lessonKey string
+	at                    time.Time
+}
+
+// dayMilestone is a milestone reached in a day.
+type dayMilestone struct {
+	key, name string
+	at        time.Time
+}
+
+// dayView is one day of a person's practice, as GET /day/{date} and the
+// Pocket Day capability give it. Lessons and milestones count on the day
+// their moment falls on in loc.
+type dayView struct {
+	Minutes    float64
+	Practices  []dayPractice
+	Streak     int
+	GoalMin    int
+	GoalMet    bool
+	Lessons    []dayLesson
+	Milestones []dayMilestone
+	Summary    string
+}
+
+func (s *Server) dayOf(ctx context.Context, uid int64, date string, loc *time.Location) (*dayView, error) {
 	ps, _, err := s.store.ListPractices(ctx, uid, store.PracticeFilter{From: date, To: date, Asc: true})
 	if err != nil {
-		s.fail(w, err, "day")
-		return
+		return nil, err
 	}
 	ps = forLink(ctx, ps)
+	v := &dayView{Practices: make([]dayPractice, 0, len(ps))}
 	total := 0.0
-	type item struct {
-		ID         int64   `json:"id"`
-		Kind       string  `json:"kind"`
-		KindName   string  `json:"kind_name"`
-		Technique  string  `json:"technique"`
-		Title      string  `json:"title"`
-		StartedAt  string  `json:"started_at"`
-		EndedAt    string  `json:"ended_at"`
-		Minutes    float64 `json:"minutes"`
-		CalmBefore *int    `json:"calm_before"`
-		CalmAfter  *int    `json:"calm_after"`
-		Lesson     string  `json:"lesson,omitempty"`
-		Note       string  `json:"note,omitempty"`
-	}
-	items := make([]item, 0, len(ps))
 	for _, p := range ps {
 		total += p.Minutes()
-		it := item{p.ID, p.Kind, content.KindName(p.Kind), p.Technique, p.Title, p.StartedAt, p.EndedAt, round1(p.Minutes()), p.CalmBefore, p.CalmAfter, "", p.Note}
+		it := dayPractice{p.ID, p.Kind, content.KindName(p.Kind), p.Technique, p.Title, p.StartedAt, p.EndedAt, round1(p.Minutes()), p.CalmBefore, p.CalmAfter, "", p.Note}
 		if prog, ok := content.ProgramByKey(p.Program); ok {
 			if l, ok := prog.FindLesson(p.Lesson); ok {
 				it.Lesson = prog.Name + ": " + l.Lesson.Title
 			}
 		}
-		items = append(items, it)
+		v.Practices = append(v.Practices, it)
 	}
+	v.Minutes = round1(total)
 	// the streak as it stood at the end of that day
 	dates, _ := s.store.PracticeDates(ctx, uid)
 	var upto []string
@@ -887,45 +911,63 @@ func (s *Server) handleDay(w http.ResponseWriter, r *http.Request) {
 			upto = append(upto, d)
 		}
 	}
-	streak := 0
 	if len(upto) > 0 && upto[len(upto)-1] == date {
-		streak, _ = streakOf(upto, date)
+		v.Streak, _ = streakOf(upto, date)
 	}
 	done, _ := s.store.LessonsDone(ctx, uid, "")
-	var lessons []map[string]any
 	for _, d := range done {
-		if t, err := time.Parse(time.RFC3339Nano, d.DoneAt); err == nil && t.Local().Format("2006-01-02") == date {
+		if t, err := time.Parse(time.RFC3339Nano, d.DoneAt); err == nil && t.In(loc).Format("2006-01-02") == date {
 			if prog, ok := content.ProgramByKey(d.Program); ok {
 				if l, ok := prog.FindLesson(d.Lesson); ok {
-					lessons = append(lessons, map[string]any{"program": prog.Name, "stage": prog.Stages[l.StageIdx].Name, "title": l.Lesson.Title})
+					v.Lessons = append(v.Lessons, dayLesson{Program: prog.Name, Stage: prog.Stages[l.StageIdx].Name, Title: l.Lesson.Title, programKey: prog.Key, lessonKey: l.Lesson.Key, at: t})
 				}
 			}
 		}
 	}
 	ach, _ := s.store.Achievements(ctx, uid)
-	var milestones []string
 	for k, u := range ach {
-		if t, err := time.Parse(time.RFC3339Nano, u.UnlockedAt); err == nil && t.Local().Format("2006-01-02") == date {
+		if t, err := time.Parse(time.RFC3339Nano, u.UnlockedAt); err == nil && t.In(loc).Format("2006-01-02") == date {
 			if a, ok := content.AchievementByKey(k); ok {
-				milestones = append(milestones, a.Name)
+				v.Milestones = append(v.Milestones, dayMilestone{key: k, name: a.Name, at: t})
 			}
 		}
 	}
-	sort.Strings(milestones)
+	sort.Slice(v.Milestones, func(i, j int) bool { return v.Milestones[i].name < v.Milestones[j].name })
 	st, _ := s.store.GetSettings(ctx, uid)
-	summary := ""
-	if len(items) > 0 {
+	v.GoalMin = st.DailyGoalMin
+	v.GoalMet = st.DailyGoalMin > 0 && total+0.01 >= float64(st.DailyGoalMin)
+	if len(v.Practices) > 0 {
 		var names []string
-		for _, it := range items {
+		for _, it := range v.Practices {
 			names = append(names, strings.ToLower(it.Title))
 		}
-		summary = fmt.Sprintf("%s of practice: %s", fmtMinutes(total), strings.Join(uniq(names), ", "))
-		if streak > 1 {
-			summary += fmt.Sprintf(" (day %d of a streak)", streak)
+		v.Summary = fmt.Sprintf("%s of practice: %s", fmtMinutes(total), strings.Join(uniq(names), ", "))
+		if v.Streak > 1 {
+			v.Summary += fmt.Sprintf(" (day %d of a streak)", v.Streak)
 		}
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"date": date, "minutes": round1(total), "sessions": len(items), "practices": items, "streak": streak,
-		"goal_min": st.DailyGoalMin, "goal_met": st.DailyGoalMin > 0 && total+0.01 >= float64(st.DailyGoalMin), "lessons": lessons, "milestones": milestones, "summary": summary})
+	return v, nil
+}
+
+// handleDay is one day for Pocket Day's journal (and anyone with mindfulness:read).
+func (s *Server) handleDay(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	date := r.URL.Path[strings.LastIndex(r.URL.Path, "/")+1:]
+	if !validDate(date) || date == "" {
+		writeErr(w, http.StatusBadRequest, "a date (YYYY-MM-DD) is required")
+		return
+	}
+	v, err := s.dayOf(ctx, actorID(ctx), date, time.Local)
+	if err != nil {
+		s.fail(w, err, "day")
+		return
+	}
+	var milestones []string
+	for _, m := range v.Milestones {
+		milestones = append(milestones, m.name)
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"date": date, "minutes": v.Minutes, "sessions": len(v.Practices), "practices": v.Practices, "streak": v.Streak,
+		"goal_min": v.GoalMin, "goal_met": v.GoalMet, "lessons": v.Lessons, "milestones": milestones, "summary": v.Summary})
 }
 
 func uniq(v []string) []string {

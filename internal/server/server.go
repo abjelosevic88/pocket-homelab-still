@@ -227,22 +227,29 @@ func (s *Server) coreLoop(ctx context.Context) {
 // eventTopics are what Still publishes on the Core bus.
 var eventTopics = []string{"still.practice_completed", "still.lesson_completed", "still.program_completed", "still.milestone_reached"}
 
-func (s *Server) registerWithCore(ctx context.Context) error {
+// manifest is what Still tells Core about itself.
+func (s *Server) manifest() core.Manifest {
 	m := core.Manifest{
 		Slug: "still", Name: "Pocket Still",
 		Description: "Breathe, sit, notice: guided breathing patterns, a meditation timer with bells and background sounds, the Path (seven stages from your first breath to sitting still) and short courses, a practice journal with how you felt before and after, streaks, milestones and statistics.",
 		Icon:        "/favicon.svg", Version: Version,
 		URL: s.cfg.CoreAppURL, PublicURL: s.cfg.BaseURL, HealthPath: "/healthz", EnvPrefix: "STILL",
-		Publishes: eventTopics,
-		Offers:    linkOffers,
-		Portable:  portable,
-		Uses:      append(linkUses(), core.InferenceUse()),
-		Services:  []core.ServiceUse{{Type: "navidrome", Reason: "Play your own music or ambient playlists behind a sit"}},
+		Publishes:    eventTopics,
+		Offers:       linkOffers,
+		Portable:     portable,
+		Uses:         append(linkUses(), core.InferenceUse()),
+		Services:     []core.ServiceUse{{Type: "navidrome", Reason: "Play your own music or ambient playlists behind a sit"}},
+		Category:     "Health",
+		Capabilities: capabilities,
 	}
 	if s.cfg.BaseURL != "" {
 		m.OIDC = &core.OIDCRequest{RedirectURIs: []string{s.oidcCallbackURL()}}
 	}
-	reg, err := s.core.Register(ctx, s.cfg.CoreRegistrationKey, m)
+	return m
+}
+
+func (s *Server) registerWithCore(ctx context.Context) error {
+	reg, err := s.core.Register(ctx, s.cfg.CoreRegistrationKey, s.manifest())
 	if err != nil {
 		return err
 	}

@@ -60,7 +60,17 @@ JSON over HTTP under `/api/v1`. Authenticate with the session cookie, a personal
 
 ## Pocket Core
 
-Offers `mindfulness:read` (dashboard, day, overlay, stats, practices without notes, programs, milestones) and `mindfulness:write` (log practices; change only its own). Uses Pocket Habits (`habits:read`, `entries:write`), Pocket Health (`health:write` for mindful minutes, `health:read` for the comparison), Pocket AI and the Navidrome service. Events: `still.practice_completed`, `still.lesson_completed`, `still.program_completed`, `still.milestone_reached`.
+Offers `mindfulness:read` (dashboard, day, overlay, stats, practices without notes, programs, milestones) and `mindfulness:write` (log practices; change only its own).
+
+Pocket Search, Pocket Day and Pocket Hub find Still on their own (Core's capabilities, each its own link that opens only its one route, read only):
+
+| | |
+|---|---|
+| `GET /pocket/search?q&limit` | `pocket:search`: your own patterns and timers, then your sessions whose note has the words (the note is not sent back), then the built-in practices, courses and lessons by name. Ids `practice:<key>`, `practice:preset:<id>`, `session:<id>`, `course:<key>`, `lesson:<course>/<key>` |
+| `GET /pocket/day/{date}?tz` | `pocket:day`: the day `GET /day/{date}` gives, one item per session (time, minutes, the practice), lessons finished, milestones reached; the summary, minutes of the goal and the streak. Through a link the notes stay out |
+| `GET /pocket/widget` | `pocket:widget`: "8 of 10 minutes today, 12 days in a row" (or "Nothing yet today"), and one thing to practise next: the next lesson of the course you worked on last, else the practice you used most in the last 90 days, else the next lesson of the Path |
+
+There is no quick capture: Still logs a practice through its form, not from a typed line. Uses Pocket Habits (`habits:read`, `entries:write`), Pocket Health (`health:write` for mindful minutes, `health:read` for the comparison), Pocket AI and the Navidrome service. Events: `still.practice_completed`, `still.lesson_completed`, `still.program_completed`, `still.milestone_reached`.
 
 ## Data
 
